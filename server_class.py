@@ -5,7 +5,11 @@ from socket import *
 from termcolor import colored
 
 RETR = 'RETR'
+STOR = 'STOR'
 HOME = 'Home'
+UPLOAD_DIR = 'Upload'
+SERVER_DATA_PORT = 2227
+BUFFER_SIZE = 1024
 class Server:
         # Key = username.
         # Value = password.
@@ -61,7 +65,7 @@ class Server:
                 print(colored('Recieved client connection, ready for new user.', 'yellow'))
                 connection_socket.send('220 Service ready for new user.')
                 # username_message will be like "USER rania" 
-                username_message = connection_socket.recv(1024).decode()
+                username_message = connection_socket.recv(BUFFER_SIZE).decode()
                 # Check for errors.
                 if not self.has_no_errors(connection_socket, username_message, 'USER', 2):
                         return
@@ -69,7 +73,7 @@ class Server:
                 print(colored('Recieved username ' + username + '. Waiting for password.', 'yellow'))
                 connection_socket.send('331 User name okay, need password.')
                 # password_message will be like "PASS XXXX" 
-                password_message = connection_socket.recv(1024).decode()
+                password_message = connection_socket.recv(BUFFER_SIZE).decode()
                 # Check for errors.
                 if not self.has_no_errors(connection_socket, password_message, 'PASS', 2):
                         return
@@ -83,7 +87,7 @@ class Server:
                         connection_socket.send('332 Need account for login.')
                         return
                 # Read user file commands.
-                command_message = connection_socket.recv(1024).decode()
+                command_message = connection_socket.recv(BUFFER_SIZE).decode()
                 client_data_port = -1
                 while command_message != 'QUIT':
                         # print('Recieved command message = ' + command_message)
@@ -115,5 +119,36 @@ class Server:
                                         file_content = file.read(file_size)
                                         data_socket.send(file_content)
                                         data_socket.close()
-                        command_message = connection_socket.recv(1024).decode()
+                        elif command_message.startswith(STOR):
+                                ##TODO
+                                command_tokens = command_message.split() 
+                                file_name = command_tokens[1]
+                                file_size = int(command_tokens[2])
+                                print 'file_name', file_name, 'file_size', file_size
+                                connection_socket.send('150 Opening BINARY mode data connection for %s (%d bytes).' %(file_name, file_size))
+                                data_socket = socket(AF_INET, SOCK_STREAM)
+                                data_socket.bind(('', SERVER_DATA_PORT))
+                                data_socket.listen(1)
+                                data_connection_socket, addr = data_socket.accept()
+                                cur_file_size = 0
+                                uploaded_file = self.cerate_file(file_name, username)
+                                while cur_file_size < file_size:
+                                        print 'cur_file_size', cur_file_size
+                                        content = data_connection_socket.recv(BUFFER_SIZE)
+                                        uploaded_file.write(content)
+                                        cur_file_size += len(content)
+                                uploaded_file.close()
+                                data_connection_socket.close()
+                                data_socket.close()
+                        command_message = connection_socket.recv(BUFFER_SIZE).decode()
+
+        def cerate_file(self, file_name, username, open_mode = 'w'):
+                if not os.path.isdir(HOME):
+                        os.mkdir(HOME)
+                if not os.path.isdir(os.path.join(HOME, username)):
+                        os.mkdir(os.path.join(HOME, username))
+                if not os.path.isdir(os.path.join(HOME, username, UPLOAD_DIR)):
+                        os.mkdir(os.path.join(HOME, username, UPLOAD_DIR))
+                file = open(os.path.join(HOME, username, UPLOAD_DIR, file_name), 'w')      
+                return file
 

@@ -5,9 +5,11 @@ import os
 CLIENT_DIR = "Client"
 BUFFER_SIZE = 2048
 RETR = 'RETR'
+STOR = 'STOR'
 DEFAULT_PORT = 3422
 CIENT_DIR = 'Client'
 FILE_NOT_FOUND = 550
+SERVER_DATA_PORT = 2227
 def send_request(client_socket, request):
     client_socket.send(request.encode())
     response = client_socket.recv(1024)
@@ -43,6 +45,8 @@ def cerate_file(file_name, open_mode = 'w'):
         os.mkdir(os.path.join(CLIENT_DIR, username))
     file = open(os.path.join(CLIENT_DIR, username, file_name), 'w')      
     return file
+
+
 if __name__ == '__main__':
     server_name = sys.argv[1]
     server_port = int(sys.argv[2])
@@ -112,17 +116,37 @@ if __name__ == '__main__':
             file_size = int(response[response.index('(')+1 : response.index(')')].split()[0])
             downloaded_file = cerate_file(file_name)
             cur_file_size = 0
-            sock, addr = data_socket.accept()
+            data_connection_socket, addr = data_socket.accept()
             while cur_file_size < file_size:
-                content = sock.recv(BUFFER_SIZE)
+                content = data_connection_socket.recv(BUFFER_SIZE)
                 downloaded_file.write(content)
                 cur_file_size += len(content)
             downloaded_file.close()
-            sock.close()
+            data_connection_socket.close()
             data_socket.close()
             port_number = -1
-        elif command == 'STOR':
-            print('In store!')
+        elif command == 'stor':
+            if len(input_str) < 2:
+                print colored('Error please enter get <file name>', 'red')
+                continue
+            if port_number == -1:
+                port_number = DEFAULT_PORT
+            file_name = input_str[1]
+            if os.path.isfile(file_name):
+                file_size = os.stat(file_name).st_size
+                request = '%s %s %d' %(STOR, file_name, file_size)
+                response = send_request(client_socket, request)
+                status_code = get_status_code(response)
+                file = open(file_name, 'r')
+                file_content = file.read(file_size)
+
+                data_socket = socket(AF_INET, SOCK_STREAM)
+                data_socket.connect((server_name, SERVER_DATA_PORT))
+                data_socket.send(file_content)
+                data_socket.close()
+                port_number = -1
+            else:
+                print 'File \'%s\' not found'
         else:
             print colored('Invalid command!', 'red')
 
