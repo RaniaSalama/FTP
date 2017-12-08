@@ -2,6 +2,7 @@ from socket import *
 import sys
 from termcolor import colored
 import os
+import socket as sck
 CLIENT_DIR = "Client"
 BUFFER_SIZE = 2048
 RETR = 'RETR'
@@ -34,6 +35,8 @@ def create_data_connection(client_socket, port_number):
     send_request(client_socket, request)
     # list on the data connection.
     data_socket = socket(AF_INET,SOCK_STREAM)
+    data_socket.setsockopt(sck.SOL_SOCKET, sck.SO_REUSEADDR, 1)
+
     data_socket.bind(('', port_number))
     data_socket.listen(1)
     return data_socket
@@ -131,6 +134,7 @@ if __name__ == '__main__':
                 continue
             if port_number == -1:
                 port_number = DEFAULT_PORT
+                data_socket = create_data_connection(client_socket, DEFAULT_PORT)
             file_name = input_str[1]
             if os.path.isfile(file_name):
                 file_size = os.stat(file_name).st_size
@@ -140,10 +144,15 @@ if __name__ == '__main__':
                 file = open(file_name, 'r')
                 file_content = file.read(file_size)
 
-                data_socket = socket(AF_INET, SOCK_STREAM)
-                data_socket.connect((server_name, SERVER_DATA_PORT))
-                data_socket.send(file_content)
+                data_connection_socket, addr = data_socket.accept()
+
+                # data_socket = socket(AF_INET, SOCK_STREAM)
+                # data_socket.connect((server_name, SERVER_DATA_PORT))
+                # data_socket.send(file_content)
+                data_connection_socket.send(file_content)
                 data_socket.close()
+                data_connection_socket.close()
+                file.close()
                 port_number = -1
             else:
                 print 'File \'%s\' not found'

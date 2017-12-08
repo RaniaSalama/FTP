@@ -127,18 +127,21 @@ class Server:
                                 print 'file_name', file_name, 'file_size', file_size
                                 connection_socket.send('150 Opening BINARY mode data connection for %s (%d bytes).' %(file_name, file_size))
                                 data_socket = socket(AF_INET, SOCK_STREAM)
-                                data_socket.bind(('', SERVER_DATA_PORT))
-                                data_socket.listen(1)
-                                data_connection_socket, addr = data_socket.accept()
+                                data_socket.connect((client_addr[0], client_data_port))
+                                
+                                # data_socket = socket(AF_INET, SOCK_STREAM)
+                                # data_socket.bind(('', SERVER_DATA_PORT))
+                                # data_socket.listen(1)
+                                # data_connection_socket, addr = data_socket.accept()
                                 cur_file_size = 0
                                 uploaded_file = self.cerate_file(file_name, username)
                                 while cur_file_size < file_size:
                                         print 'cur_file_size', cur_file_size
-                                        content = data_connection_socket.recv(BUFFER_SIZE)
+                                        content = data_socket.recv(BUFFER_SIZE)
                                         uploaded_file.write(content)
                                         cur_file_size += len(content)
                                 uploaded_file.close()
-                                data_connection_socket.close()
+                                # data_connection_socket.close()
                                 data_socket.close()
                         command_message = connection_socket.recv(BUFFER_SIZE).decode()
 
