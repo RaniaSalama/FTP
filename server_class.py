@@ -3,13 +3,17 @@ from datetime import datetime
 import csv
 from socket import *
 from termcolor import colored
-
+from stat import S_ISREG, ST_CTIME, ST_MODE, ST_SIZE, S_ISDIR
+import time
 RETR = 'RETR'
 STOR = 'STOR'
 HOME = 'Home'
 UPLOAD_DIR = 'Upload'
-SERVER_DATA_PORT = 2227
+SERVER_DATA_PORT = 2300
 BUFFER_SIZE = 1024
+
+DIR = 2
+FILE = 1
 class Server:
         # Key = username.
         # Value = password.
@@ -57,6 +61,23 @@ class Server:
                         connection_socket.send('501 Syntax error in parameters or arguments.')
                         return False
                 return True
+
+        def list_files(self, dirpath):
+                # get all entries in the directory w/ stats
+                entries = (os.path.join(HOME, dirpath, fn) for fn in os.listdir(os.path.join(HOME, dirpath)))
+                entries = ((os.stat(path), path) for path in entries)
+                # leave only regular files and directories, insert creation date
+                entries = list((FILE if S_ISREG(stat[ST_MODE]) else DIR, stat[ST_SIZE], stat[ST_CTIME], path)
+                           for stat, path in entries if (S_ISREG(stat[ST_MODE]) or S_ISDIR(stat[ST_MODE])))
+                #format output
+                size_max_size = 0
+                date_max_size = 0
+                size_max_size = max([len(str(tup[1])) for tup in entries])
+                date_max_size = max([len(time.ctime(tup[2])) for tup in entries])
+                output = ''
+                for f_type, size, cdate, path in entries:
+                        output += ('File     ' if f_type == FILE else 'Directory') + '\t' + str(size) + ' ' * (size_max_size- len(str(size))) +'\t' + time.ctime(cdate) + ' ' * (date_max_size - len(time.ctime(cdate))) + '\t' + os.path.basename(path) + '\n'
+                return output.strip()
                 
 	# Construct and send the ftp response.
 	# sentence: the request message.
@@ -104,7 +125,7 @@ class Server:
                                 data_socket = socket(AF_INET, SOCK_STREAM)
                                 connection_socket.send('150 File status okay; about to open data connection.')
                                 data_socket.connect((client_addr[0], client_data_port))
-                                data_socket.send('HELLO LISTING ...'.encode())
+                                data_socket.send(self.list_files(username).encode())
                         elif command_message.startswith(RETR):
                                 file_path = os.path.join(HOME, username, command_message.split()[1])
                                 if not os.path.isfile(file_path):
@@ -120,7 +141,6 @@ class Server:
                                         data_socket.send(file_content)
                                         data_socket.close()
                         elif command_message.startswith(STOR):
-                                ##TODO
                                 command_tokens = command_message.split() 
                                 file_name = command_tokens[1]
                                 file_size = int(command_tokens[2])
@@ -128,11 +148,6 @@ class Server:
                                 connection_socket.send('150 Opening BINARY mode data connection for %s (%d bytes).' %(file_name, file_size))
                                 data_socket = socket(AF_INET, SOCK_STREAM)
                                 data_socket.connect((client_addr[0], client_data_port))
-                                
-                                # data_socket = socket(AF_INET, SOCK_STREAM)
-                                # data_socket.bind(('', SERVER_DATA_PORT))
-                                # data_socket.listen(1)
-                                # data_connection_socket, addr = data_socket.accept()
                                 cur_file_size = 0
                                 uploaded_file = self.cerate_file(file_name, username)
                                 while cur_file_size < file_size:

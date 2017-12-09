@@ -7,10 +7,13 @@ CLIENT_DIR = "Client"
 BUFFER_SIZE = 2048
 RETR = 'RETR'
 STOR = 'STOR'
-DEFAULT_PORT = 3422
+DEFAULT_PORT = 3427
 CIENT_DIR = 'Client'
 FILE_NOT_FOUND = 550
-SERVER_DATA_PORT = 2227
+SERVER_DATA_PORT = 2300
+
+DIR = 2
+FILE = 1
 def send_request(client_socket, request):
     client_socket.send(request.encode())
     response = client_socket.recv(1024)
@@ -97,11 +100,14 @@ if __name__ == '__main__':
                 continue
             data_socket = create_data_connection(client_socket, port_number)
         elif command == 'list':
+            if port_number == -1:
+                port_number = DEFAULT_PORT
+                data_socket = create_data_connection(client_socket, DEFAULT_PORT)
             request = 'LIST'
-            send_request(client_socket, request)
+            response = send_request(client_socket, request)
             data_connection_socket, server_addr = data_socket.accept()
             response = data_connection_socket.recv(1024)
-            print(response)
+            print(colored(response, 'yellow'))
         elif command == 'get':
             if len(input_str) < 2:
                 print colored('Error please enter get <file name>', 'red')
@@ -145,10 +151,6 @@ if __name__ == '__main__':
                 file_content = file.read(file_size)
 
                 data_connection_socket, addr = data_socket.accept()
-
-                # data_socket = socket(AF_INET, SOCK_STREAM)
-                # data_socket.connect((server_name, SERVER_DATA_PORT))
-                # data_socket.send(file_content)
                 data_connection_socket.send(file_content)
                 data_socket.close()
                 data_connection_socket.close()
