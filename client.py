@@ -78,7 +78,7 @@ if __name__ == '__main__':
     data_socket = 0
     port_number = -1
     while True:
-        print 'Please enter LIST, PORT, GET, STOR or QUIT'
+        print 'Please enter LIST, PORT, RETR, STOR or QUIT'
         input_str = raw_input('Enter your command: ').split()
         command = input_str[0].lower()
         if command == 'quit':
@@ -108,9 +108,9 @@ if __name__ == '__main__':
             data_connection_socket, server_addr = data_socket.accept()
             response = data_connection_socket.recv(1024)
             print(colored(response, 'yellow'))
-        elif command == 'get':
+        elif command == 'retr':
             if len(input_str) < 2:
-                print colored('Error please enter get <file name>', 'red')
+                print colored('Error please enter RETR <file name>', 'red')
                 continue
             if port_number == -1:
                 port_number = DEFAULT_PORT
@@ -136,7 +136,7 @@ if __name__ == '__main__':
             port_number = -1
         elif command == 'stor':
             if len(input_str) < 2:
-                print colored('Error please enter get <file name>', 'red')
+                print colored('Error please enter STOR <file name>', 'red')
                 continue
             if port_number == -1:
                 port_number = DEFAULT_PORT
