@@ -3,6 +3,7 @@ import sys
 import os
 import socket as sck
 import inspect
+from termcolor import colored
 CLIENT_DIR = "Client"
 BUFFER_SIZE = 2**15
 RETR = 'RETR'
@@ -22,9 +23,9 @@ def send_request(client_socket, request):
     if response.strip() != '':
         response_code = get_status_code(response)
         if response_code >= 500:
-            print('>>Server response: %s' % (response))
+            print colored('>>Server response: %s' % (response), 'red')
         else:
-            print('>>Server response: %s' %(response))
+            print colored('>>Server response: %s' %(response), 'green')
     return response
 
 def is_valid_response(response):
@@ -66,18 +67,18 @@ if __name__ == '__main__':
     client_socket = socket(AF_INET, SOCK_STREAM)
     client_socket.connect((server_name,server_port))
     request = 'START...'
-    print('send start request first!')
+    print colored('send start request first!', 'yellow')
     send_request(client_socket, request)
     # Start authentication.
-    username = raw_input('Enter your username: ')
+    username = raw_input(colored('Enter your username: ', 'yellow'))
     request = 'USER ' + username
     send_request(client_socket, request)
-    password = raw_input('Enter your password: ')
+    password = raw_input(colored('Enter your password: ', 'yellow'))
     request = 'PASS ' + password
     response = send_request(client_socket, request)
     if not is_valid_response(response):
-        print('Wrong username and/or password!')
-        print('Goodbye!')
+        print(colored('Wrong username and/or password!', 'red'))
+        print(colored('Goodbye!', 'red'))
         client_socket.close()
         exit(0)
 
@@ -97,13 +98,13 @@ if __name__ == '__main__':
             exit(0)
         elif command == 'port':
             if len(input_str) < 2:
-                print('Error please enter port <port number>')
+                print colored('Error please enter port <port number>', 'red')
                 continue
             try:
                 port_number = int(input_str[1])
                 DEFAULT_PORT = port_number
             except ValueError:
-                print('Error please enter port <port number>')
+                print colored('Error please enter port <port number>', 'red')
                 continue
             data_socket = create_data_connection(client_socket, port_number)
         elif command == 'list':
@@ -113,11 +114,11 @@ if __name__ == '__main__':
             request = 'LIST'
             response = send_request(client_socket, request)
             data_connection_socket, server_addr = data_socket.accept()
-            response = data_connection_socket.recv(1024)
-            print(response)
+            response = data_connection_socket.recv(BUFFER_SIZE)
+            print(colored(response, 'yellow'))
         elif command == 'retr':
             if len(input_str) < 2:
-                print('Error please enter RETR <file name>')
+                print colored('Error please enter RETR <file name>', 'red')
                 continue
             if port_number == -1:
                 port_number = DEFAULT_PORT
@@ -127,7 +128,7 @@ if __name__ == '__main__':
             response = send_request(client_socket, request)
             status_code = get_status_code(response)
             if status_code == FILE_NOT_FOUND:
-                print ('File \'%s\' not found' %(file_name))
+                print colored('File \'%s\' not found' %(file_name), 'red')
                 continue
             file_size = int(response[response.index('(')+1 : response.index(')')].split()[0])
             downloaded_file = cerate_file(file_name)
@@ -136,7 +137,7 @@ if __name__ == '__main__':
             while cur_file_size < file_size:
                 content = data_connection_socket.recv(BUFFER_SIZE)
                 cur_file_size += len(content)
-                print ('\tReceived %d bytes. Total received = %d' %(len(content), cur_file_size))
+                print colored('\tReceived %d bytes. Total received = %d' %(len(content), cur_file_size), 'yellow')
                 downloaded_file.write(content)
             downloaded_file.close()
             data_connection_socket.close()
@@ -144,7 +145,7 @@ if __name__ == '__main__':
             port_number = -1
         elif command == 'stor':
             if len(input_str) < 2:
-                print ('Error please enter STOR <file name>')
+                print colored('Error please enter STOR <file name>', 'red')
                 continue
             if port_number == -1:
                 port_number = DEFAULT_PORT
@@ -168,5 +169,5 @@ if __name__ == '__main__':
             else:
                 print 'File \'%s\' not found'
         else:
-            print ('Invalid command!')
+            print colored('Invalid command!', 'red')
 

@@ -4,6 +4,7 @@ import csv
 from socket import *
 from stat import S_ISREG, ST_CTIME, ST_MODE, ST_SIZE, S_ISDIR
 import time
+from termcolor import colored
 RETR = 'RETR'
 STOR = 'STOR'
 HOME = 'Home'
@@ -50,14 +51,14 @@ class Server:
         def has_no_errors(self, connection_socket, command_messgae, expected, args_no):
                 if not command_messgae.startswith(expected):
                         if is_command_vaid(command_messgae):
-                                print('Recieved bad sequence of commands.')
+                                print(colored('Recieved bad sequence of commands.', 'red'))
                                 connection_socket.send('503 Bad sequence of commands.')
                         else:
-                                print('Invalid command!')
+                                print(colored('Invalid command!', 'red'))
                                 connection_socket.send('502 Command not implemented.')
                         return False
                 if len(command_messgae.split()) != args_no:
-                        print('Problem with the command arguments number!')
+                        print(colored('Problem with the command arguments number!', 'red'))
                         connection_socket.send('501 Syntax error in parameters or arguments.')
                         return False
                 return True
@@ -90,7 +91,7 @@ class Server:
 	# sentence: the request message.
 	# connection_socket: the socket to send the response through.
 	def send_ftp_response(self, sentence, connection_socket, client_addr):
-                print('Recieved client connection, ready for new user.')
+                print(colored('Recieved client connection, ready for new user.', 'yellow'))
                 connection_socket.send('220 Service ready for new user.')
                 # username_message will be like "USER rania" 
                 username_message = connection_socket.recv(BUFFER_SIZE).decode()
@@ -98,7 +99,7 @@ class Server:
                 if not self.has_no_errors(connection_socket, username_message, 'USER', 2):
                         return
                 username = username_message.split()[1]
-                print('Recieved username ' + username + '. Waiting for password.')
+                print(colored('Recieved username ' + username + '. Waiting for password.', 'yellow'))
                 connection_socket.send('331 User name okay, need password.')
                 # password_message will be like "PASS XXXX" 
                 password_message = connection_socket.recv(BUFFER_SIZE).decode()
@@ -108,10 +109,10 @@ class Server:
                 password = password_message.split()[1]
                 # Check if username and password is correct.
                 if self.check_username_and_password(username, password):
-                        print('Recieved correct username and password.')
+                        print(colored('Recieved correct username and password.', 'green'))
                         connection_socket.send('230 User logged in, proceed.')
                 else:
-                        print('Recieved wrong username and/or password.')
+                        print(colored('Recieved wrong username and/or password.', 'red'))
                         connection_socket.send('332 Need account for login.')
                         return
                 # Read user file commands.
@@ -122,11 +123,11 @@ class Server:
                         if command_message.startswith('PORT'):
                                 command_split = command_message.split()
                                 if len(command_split) != 2:
-                                        print('Problem with the command arguments number!')
+                                        print(colored('Problem with the command arguments number!', 'red'))
                                         connection_socket.send('501 Syntax error in parameters or arguments.')
                                         return
                                 client_data_port = int(command_split[1])
-                                print('Changed client data port number to ' + str(client_data_port))
+                                print(colored('Changed client data port number to ' + str(client_data_port), 'green'))
                                 connection_socket.send('200 Command okay.')
                         elif command_message.startswith('LIST'):
                                 data_socket = socket(AF_INET, SOCK_STREAM)
