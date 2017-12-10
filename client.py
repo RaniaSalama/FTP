@@ -1,8 +1,8 @@
 from socket import *
 import sys
-from termcolor import colored
 import os
 import socket as sck
+import inspect
 CLIENT_DIR = "Client"
 BUFFER_SIZE = 2**15
 RETR = 'RETR'
@@ -11,7 +11,8 @@ DEFAULT_PORT = 3429
 CIENT_DIR = 'Client'
 FILE_NOT_FOUND = 550
 SERVER_DATA_PORT = 2300
-
+# Get the base directory of the source code, as the upload folder will be next to it.
+base_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 DIR = 2
 FILE = 1
 def send_request(client_socket, request):
@@ -21,9 +22,9 @@ def send_request(client_socket, request):
     if response.strip() != '':
         response_code = get_status_code(response)
         if response_code >= 500:
-            print colored('>>Server response: %s' % (response), 'red')
+            print('>>Server response: %s' % (response))
         else:
-            print colored('>>Server response: %s' %(response), 'green')
+            print('>>Server response: %s' %(response))
     return response
 
 def is_valid_response(response):
@@ -44,12 +45,12 @@ def create_data_connection(client_socket, port_number):
     data_socket.listen(1)
     return data_socket
 get_status_code  = lambda x : int(x.split()[0])
-def cerate_file(file_name, open_mode = 'w'):
-    if not os.path.isdir(CLIENT_DIR):
-        os.mkdir(CLIENT_DIR)
-    if not os.path.isdir(os.path.join(CLIENT_DIR, username)):
-        os.mkdir(os.path.join(CLIENT_DIR, username))
-    file = open(os.path.join(CLIENT_DIR, username, file_name), 'w')      
+def cerate_file(file_name):
+    if not os.path.isdir(os.path.join(base_dir, CLIENT_DIR)):
+        os.mkdir(os.path.join(base_dir, CLIENT_DIR))
+    if not os.path.isdir(os.path.join(base_dir, CLIENT_DIR, username)):
+        os.mkdir(os.path.join(base_dir, CLIENT_DIR, username))
+    file = open(os.path.join(base_dir, CLIENT_DIR, username, file_name), 'wb')      
     return file
 
 def send_file(sock, file_content):
@@ -65,18 +66,18 @@ if __name__ == '__main__':
     client_socket = socket(AF_INET, SOCK_STREAM)
     client_socket.connect((server_name,server_port))
     request = 'START...'
-    print colored('send start request first!', 'yellow')
+    print('send start request first!')
     send_request(client_socket, request)
     # Start authentication.
-    username = raw_input(colored('Enter your username: ', 'yellow'))
+    username = raw_input('Enter your username: ')
     request = 'USER ' + username
     send_request(client_socket, request)
-    password = raw_input(colored('Enter your password: ', 'yellow'))
+    password = raw_input('Enter your password: ')
     request = 'PASS ' + password
     response = send_request(client_socket, request)
     if not is_valid_response(response):
-        print(colored('Wrong username and/or password!', 'red'))
-        print(colored('Goodbye!', 'red'))
+        print('Wrong username and/or password!')
+        print('Goodbye!')
         client_socket.close()
         exit(0)
 
@@ -96,13 +97,13 @@ if __name__ == '__main__':
             exit(0)
         elif command == 'port':
             if len(input_str) < 2:
-                print colored('Error please enter port <port number>', 'red')
+                print('Error please enter port <port number>')
                 continue
             try:
                 port_number = int(input_str[1])
                 DEFAULT_PORT = port_number
             except ValueError:
-                print colored('Error please enter port <port number>', 'red')
+                print('Error please enter port <port number>')
                 continue
             data_socket = create_data_connection(client_socket, port_number)
         elif command == 'list':
@@ -113,10 +114,10 @@ if __name__ == '__main__':
             response = send_request(client_socket, request)
             data_connection_socket, server_addr = data_socket.accept()
             response = data_connection_socket.recv(1024)
-            print(colored(response, 'yellow'))
+            print(response)
         elif command == 'retr':
             if len(input_str) < 2:
-                print colored('Error please enter RETR <file name>', 'red')
+                print('Error please enter RETR <file name>')
                 continue
             if port_number == -1:
                 port_number = DEFAULT_PORT
@@ -126,7 +127,7 @@ if __name__ == '__main__':
             response = send_request(client_socket, request)
             status_code = get_status_code(response)
             if status_code == FILE_NOT_FOUND:
-                print colored('File \'%s\' not found' %(file_name), 'red')
+                print ('File \'%s\' not found' %(file_name))
                 continue
             file_size = int(response[response.index('(')+1 : response.index(')')].split()[0])
             downloaded_file = cerate_file(file_name)
@@ -134,16 +135,16 @@ if __name__ == '__main__':
             data_connection_socket, addr = data_socket.accept()
             while cur_file_size < file_size:
                 content = data_connection_socket.recv(BUFFER_SIZE)
-                print colored('\tReceived %d bytes. Total received = %d' %(len(content), cur_file_size), 'yellow')
-                downloaded_file.write(content)
                 cur_file_size += len(content)
+                print ('\tReceived %d bytes. Total received = %d' %(len(content), cur_file_size))
+                downloaded_file.write(content)
             downloaded_file.close()
             data_connection_socket.close()
             data_socket.close()
             port_number = -1
         elif command == 'stor':
             if len(input_str) < 2:
-                print colored('Error please enter STOR <file name>', 'red')
+                print ('Error please enter STOR <file name>')
                 continue
             if port_number == -1:
                 port_number = DEFAULT_PORT
@@ -154,7 +155,7 @@ if __name__ == '__main__':
                 request = '%s %s %d' %(STOR, file_name, file_size)
                 response = send_request(client_socket, request)
                 status_code = get_status_code(response)
-                file = open(file_name, 'r')
+                file = open(file_name, 'rb')
                 file_content = file.read(file_size)
 
                 data_connection_socket, addr = data_socket.accept()
@@ -167,5 +168,5 @@ if __name__ == '__main__':
             else:
                 print 'File \'%s\' not found'
         else:
-            print colored('Invalid command!', 'red')
+            print ('Invalid command!')
 
