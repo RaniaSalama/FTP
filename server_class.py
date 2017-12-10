@@ -10,7 +10,7 @@ STOR = 'STOR'
 HOME = 'Home'
 UPLOAD_DIR = 'Upload'
 SERVER_DATA_PORT = 2300
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 2**15
 
 DIR = 2
 FILE = 1
@@ -79,6 +79,13 @@ class Server:
                         output += ('File     ' if f_type == FILE else 'Directory') + '\t' + str(size) + ' ' * (size_max_size- len(str(size))) +'\t' + time.ctime(cdate) + ' ' * (date_max_size - len(time.ctime(cdate))) + '\t' + os.path.basename(path) + '\n'
                 return output.strip()
                 
+        def send_file(self, sock, file_content):
+                file_len = len(file_content)
+                sent_len = 0
+                while sent_len < len(file_content):
+                        to_be_sent_len = min(BUFFER_SIZE, file_len - sent_len)
+                        sock.send(file_content[sent_len: sent_len + to_be_sent_len])
+                        sent_len += to_be_sent_len
 	# Construct and send the ftp response.
 	# sentence: the request message.
 	# connection_socket: the socket to send the response through.
@@ -138,8 +145,10 @@ class Server:
                                         #Sedn file
                                         file = open(file_path)
                                         file_content = file.read(file_size)
-                                        data_socket.send(file_content)
+                                        print len(file_content)
+                                        self.send_file(data_socket, file_content)
                                         data_socket.close()
+                                        file.close()
                         elif command_message.startswith(STOR):
                                 command_tokens = command_message.split() 
                                 file_name = command_tokens[1]
@@ -151,7 +160,6 @@ class Server:
                                 cur_file_size = 0
                                 uploaded_file = self.cerate_file(file_name, username)
                                 while cur_file_size < file_size:
-                                        print 'cur_file_size', cur_file_size
                                         content = data_socket.recv(BUFFER_SIZE)
                                         uploaded_file.write(content)
                                         cur_file_size += len(content)

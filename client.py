@@ -4,10 +4,10 @@ from termcolor import colored
 import os
 import socket as sck
 CLIENT_DIR = "Client"
-BUFFER_SIZE = 2048
+BUFFER_SIZE = 2**15
 RETR = 'RETR'
 STOR = 'STOR'
-DEFAULT_PORT = 3427
+DEFAULT_PORT = 3429
 CIENT_DIR = 'Client'
 FILE_NOT_FOUND = 550
 SERVER_DATA_PORT = 2300
@@ -52,7 +52,13 @@ def cerate_file(file_name, open_mode = 'w'):
     file = open(os.path.join(CLIENT_DIR, username, file_name), 'w')      
     return file
 
-
+def send_file(sock, file_content):
+    file_len = len(file_content)
+    sent_len = 0
+    while sent_len < len(file_content):
+        to_be_sent_len = min(BUFFER_SIZE, file_len - sent_len)
+        sock.send(file_content[sent_len: sent_len + to_be_sent_len])
+        sent_len += to_be_sent_len
 if __name__ == '__main__':
     server_name = sys.argv[1]
     server_port = int(sys.argv[2])
@@ -128,6 +134,7 @@ if __name__ == '__main__':
             data_connection_socket, addr = data_socket.accept()
             while cur_file_size < file_size:
                 content = data_connection_socket.recv(BUFFER_SIZE)
+                print colored('\tReceived %d bytes. Total received = %d' %(len(content), cur_file_size), 'yellow')
                 downloaded_file.write(content)
                 cur_file_size += len(content)
             downloaded_file.close()
@@ -151,7 +158,8 @@ if __name__ == '__main__':
                 file_content = file.read(file_size)
 
                 data_connection_socket, addr = data_socket.accept()
-                data_connection_socket.send(file_content)
+                # data_connection_socket.send(file_content)
+                send_file(data_connection_socket, file_content)
                 data_socket.close()
                 data_connection_socket.close()
                 file.close()
