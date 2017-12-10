@@ -62,13 +62,20 @@ class Server:
                         connection_socket.send('501 Syntax error in parameters or arguments.')
                         return False
                 return True
-
+        def get_size(self, start_path):
+            print start_path
+            total_size = 0
+            for dirpath, dirnames, filenames in os.walk(start_path):
+                for f in filenames:
+                    fp = os.path.join(dirpath, f)
+                    total_size += os.path.getsize(fp)
+            return total_size
         def list_files(self, dirpath):
                 # get all entries in the directory w/ stats
                 entries = (os.path.join(base_dir, HOME, dirpath, fn) for fn in os.listdir(os.path.join(base_dir, HOME, dirpath)))
                 entries = ((os.stat(path), path) for path in entries)
                 # leave only regular files and directories, insert creation date
-                entries = list((FILE if S_ISREG(stat[ST_MODE]) else DIR, stat[ST_SIZE], stat[ST_CTIME], path)
+                entries = list((FILE if S_ISREG(stat[ST_MODE]) else DIR, stat[ST_SIZE] if S_ISREG(stat[ST_MODE]) else self.get_size(path), stat[ST_CTIME], path)
                            for stat, path in entries if (S_ISREG(stat[ST_MODE]) or S_ISDIR(stat[ST_MODE])))
                 #format output
                 size_max_size = 0
