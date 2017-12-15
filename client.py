@@ -8,7 +8,7 @@ CLIENT_DIR = "Client"
 BUFFER_SIZE = 2**15
 RETR = 'RETR'
 STOR = 'STOR'
-DEFAULT_PORT = 3429
+DEFAULT_PORT = 3500
 CIENT_DIR = 'Client'
 FILE_NOT_FOUND = 550
 SERVER_DATA_PORT = 2300
@@ -137,7 +137,7 @@ if __name__ == '__main__':
             while cur_file_size < file_size:
                 content = data_connection_socket.recv(BUFFER_SIZE)
                 cur_file_size += len(content)
-                print colored('\tReceived %d bytes. Total received = %d' %(len(content), cur_file_size), 'yellow')
+                # print colored('\tReceived %d bytes. Total received = %d' %(len(content), cur_file_size), 'yellow')
                 downloaded_file.write(content)
             downloaded_file.close()
             data_connection_socket.close()
@@ -167,7 +167,7 @@ if __name__ == '__main__':
                 file.close()
                 port_number = -1
             else:
-                print 'File \'%s\' not found'
+                print 'File \'%s\' not found' % (file_name)
         else:
             print colored('Invalid command!', 'red')
 
