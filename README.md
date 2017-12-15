@@ -18,6 +18,7 @@ Dependencies
  		* RETR [file name on server]
  			-- File will be saved in Client/[user name]/[file name on server]
  		* STOR [file name on client]
+ 			-- The file to upload is assumed to be in the current directory (in the same directory as the code)
  			-- File will be saved in Home/[user name]/[file name on client]
  		* LIST
  			-- Will list the files and folders found Home/[user name] and will print them. Note that this is not a recursive list, which means it will only list folders and files and not the contents of subfolders
