@@ -8,6 +8,7 @@ Dependencies
  Running the code
  ----------------
  	- To run the code, you need to have, in the same directory of the code, two directories named "Home" and "Client" each contains sub-directories, one for each user (e.g., "Rania" and "Ahmed" ...)
+ 		** If the directory "Client/[user name]" does not exist and the user needs to download a file, the "client.py" program creates the needed directory "Client/[user name]"
  	- You need to run the server first using "python server.py [server port number]"
  	- Then, run the client "python client.py [server name] [server port number]"
  		* In case the server is on the same machien as the client use "localhost" as the [server name]
